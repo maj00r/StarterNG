@@ -25,7 +25,7 @@ public class Scenery
     // Weather / environment. Like the original Starter, these are editable and are
     // written into the scenery's "config" block on launch (see RewriteWeather).
     // Defaults mirror the original (15 °C, day 0, 10:30, clear sky).
-    public string WeatherTime = "10:30"; // h:mm   -> "time"/"scenario.time.override"
+    public string WeatherTime = "10:30"; // h:mm   -> "scenario.time.override" (start time)
     public int Day = 0;                  // "movelight <day>" (day of year / season)
     public double Temperature = 15;      // "scenario.weather.temperature"
     public int FogEnd = 2000;            // visibility in metres (atmo fog range)
@@ -33,6 +33,15 @@ public class Scenery
 
     /// <summary>True when the scenery actually declared any weather command.</summary>
     public bool HasWeather;
+
+    /// <summary>
+    /// The scenery's authored base clock ("time h:mm" in its config), which the
+    /// timetables are written against. Kept separate from <see cref="WeatherTime"/>
+    /// so the chosen start time is expressed purely as scenario.time.override; the
+    /// engine then shifts BOTH the clock and the timetables by (override - base).
+    /// Null when the scenery declares no base time (nothing to shift against).
+    /// </summary>
+    private string BaseTime;
 
     /// <summary>Set once the user edits the weather, so export rewrites the config.</summary>
     public bool WeatherDirty;
@@ -116,11 +125,16 @@ public class Scenery
     /// </summary>
     private void ParseWeather(string content)
     {
-        // start time: "scenario.time.override h:mm" wins, else top-level "time h:mm"
+        // Base clock the timetables are authored against: the top-level "time h:mm".
+        // Captured separately from the start time so it can be preserved on export.
+        var baseTime = Regex.Match(content, @"(?im)^\s*time\s+(\d{1,2})[:.](\d{2})\b");
+        if (baseTime.Success)
+            BaseTime = $"{baseTime.Groups[1].Value.PadLeft(2, '0')}:{baseTime.Groups[2].Value}";
+
+        // start time (shown/edited by the user): "scenario.time.override h:mm" wins,
+        // else the base "time h:mm".
         var ovr = Regex.Match(content, @"(?i)scenario\.time\.override\s+(\d{1,2})[:.](\d{2})");
-        var time = ovr.Success
-            ? ovr
-            : Regex.Match(content, @"(?im)^\s*time\s+(\d{1,2})[:.](\d{2})\b");
+        var time = ovr.Success ? ovr : baseTime;
         if (time.Success)
         {
             WeatherTime = $"{time.Groups[1].Value.PadLeft(2, '0')}:{time.Groups[2].Value}";
@@ -188,7 +202,11 @@ public class Scenery
                 $"movelight {Day}\r\n" +
                 $"scenario.weather.temperature {Temperature.ToString(inv)}\r\n" +
                 $"scenario.time.override {WeatherTime}\r\n" +
-                $"time {WeatherTime} 0 0 endtime\r\n" +
+                // Keep the scenery's authored base clock so the engine can shift the
+                // timetables by (override - base). Writing WeatherTime here too would
+                // make base == override => offset 0 => timetables never get shifted.
+                // Fall back to WeatherTime only when the scenery had no base time.
+                $"time {BaseTime ?? WeatherTime} 0 0 endtime\r\n" +
                 $"atmo 0 0 0 {FogEnd} {FogEnd} 0 0 0 {Overcast.ToString(inv)} endatmo\r\n" +
                 "endconfig\r\n";
 

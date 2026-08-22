@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 18
-VisualStudioVersion = 18.1.11312.151 d18.0
+VisualStudioVersion = 18.1.11312.151
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StarterNG", "StarterNG\StarterNG.csproj", "{D1E8A3A3-3269-415A-94AD-D6F370D7E4FD}"
 EndProject
@@ -25,8 +25,10 @@ Global
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {8294FFCC-81CA-4D62-998E-B0790CD2D942}
+	EndGlobalSection
 	GlobalSection(RiderSharedRunConfigurations) = postSolution
-		File = linuix.run\StarterNG (linux64).run.xml
 		File = windows.run\StarterNG (win64).run.xml
 	EndGlobalSection
 EndGlobal
